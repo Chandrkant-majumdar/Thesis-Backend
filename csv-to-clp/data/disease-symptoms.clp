@@ -15,8 +15,7 @@
   (has_symptom skin_rash)
   (has_symptom nodal_skin_eruptions)
   (has_symptom dischromic_patches)
-	=>
-  (assert (disease_is Fungal_infection))
+=>(assert (disease_is Fungal_infection))
 )
 
 (defrule Allergy
@@ -105,8 +104,7 @@
   (has_symptom patches_in_throat)
   (has_symptom high_fever)
   (has_symptom extra_marital_contacts)
-  =>
-  (assert (disease_is AIDS))
+=>(assert (disease_is AIDS))
 )
 
 (defrule Diabetes
@@ -151,6 +149,8 @@
   (has_symptom high_fever)
   (has_symptom breathlessness)
 	(has_symptom dunga)
+
+ 
 	=>
   (assert (disease_is Bronchial_Asthma))
 )
@@ -255,7 +255,6 @@
   (has_symptom itching)
   (has_symptom skin_rash)
   (has_symptom fatigue)
-  (has_symptom lethargy)
   =>
   (assert (disease_is Chicken_pox))
 )
@@ -361,6 +360,7 @@
   (has_symptom vomiting)
   (has_symptom fatigue)
   (has_symptom high_fever)
+  (has_symptom sore_throat)
   =>
   (assert (disease_is Hepatitis_E))
 )
@@ -464,7 +464,6 @@
 (defrule is_it_Varicose_veins
   (has_symptom fatigue)
   (has_symptom cramps)
-  (has_symptom bruising)
   (has_symptom obesity)
   =>
   (assert (disease_is Varicose_veins))
@@ -509,7 +508,6 @@
 (defrule is_it_Hypoglycemia
   (has_symptom vomiting)
   (has_symptom fatigue)
-  (has_symptom anxiety)
   (has_symptom sweating)
   =>
   (assert (disease_is Hypoglycemia))
@@ -629,7 +627,6 @@
 )
 
 (defrule is_it_Fungal_infection1
-  (has_symptom itching1)
   =>
   (assert (disease_is Fungal_infection1))
 )
@@ -646,27 +643,168 @@
   (assert (disease_is Allergy1))
 )
   
-(defrule Fungal_infection1
-  (disease_is Fungal_infection1)
+(defrule Influenza
+  (disease_is Influenza)
   =>
-  (printout t "Fungal infection1" crlf)
+  (printout t "Influenza" crlf)
 )
 
-(defrule is_it_Fungal_infection1
-  (has_symptom itching1)
+(defrule is_it_Influenza
+  (has_symptom high_fever)
+  (has_symptom cough)
+  (has_symptom sore_throat)
+  (has_symptom muscle_ache)
   =>
-  (assert (disease_is Fungal_infection1))
+  (assert (disease_is Influenza))
 )
   
-(defrule Allergy1
-  (disease_is Allergy1)
+(defrule Tonsillitis
+  (disease_is Tonsillitis)
   =>
-  (printout t "Allergy1" crlf)
+  (printout t "Tonsillitis" crlf)
 )
 
-(defrule is_it_Allergy1
-  (has_symptom continuous_sneezing1)
+(defrule is_it_Tonsillitis
+  (has_symptom throat_pain)
+  (has_symptom swollen_tonsils)
+  (has_symptom fever)
+  (has_symptom difficulty_swallowing)
   =>
-  (assert (disease_is Allergy1))
+  (assert (disease_is Tonsillitis))
+)
+  
+(defrule Appendicitis
+  (disease_is Appendicitis)
+  =>
+  (printout t "Appendicitis" crlf)
+)
+
+(defrule is_it_Appendicitis
+  (has_symptom abdominal_pain)
+  (has_symptom nausea)
+  (has_symptom vomiting)
+  (has_symptom fever)
+  =>
+  (assert (disease_is Appendicitis))
+)
+  
+(defrule Sinusitis
+  (disease_is Sinusitis)
+  =>
+  (printout t "Sinusitis" crlf)
+)
+
+(defrule is_it_Sinusitis
+  (has_symptom facial_pain)
+  (has_symptom headache)
+  (has_symptom nasal_congestion)
+  (has_symptom runny_nose)
+  =>
+  (assert (disease_is Sinusitis))
+)
+  
+(defrule Otitis_Media
+  (disease_is Otitis_Media)
+  =>
+  (printout t "Otitis Media" crlf)
+)
+
+(defrule is_it_Otitis_Media
+  (has_symptom ear_pain)
+  (has_symptom fever)
+  (has_symptom fluid_draining_from_ear)
+  (has_symptom trouble_hearing)
+  =>
+  (assert (disease_is Otitis_Media))
+)
+  
+(defrule Gout
+  (disease_is Gout)
+  =>
+  (printout t "Gout" crlf)
+)
+
+(defrule is_it_Gout
+  (has_symptom joint_pain)
+  (has_symptom swelling_joints)
+  (has_symptom redness)
+  (has_symptom warmth)
+  =>
+  (assert (disease_is Gout))
+)
+  
+(defrule Tension_Headache
+  (disease_is Tension_Headache)
+  =>
+  (printout t "Tension Headache" crlf)
+)
+
+(defrule is_it_Tension_Headache
+  (has_symptom headache)
+  (has_symptom tight_band_like_pain)
+  (has_symptom neck_pain)
+  (has_symptom fatigue)
+  =>
+  (assert (disease_is Tension_Headache))
+)
+  
+(defrule Hemorrhoids
+  (disease_is Hemorrhoids)
+  =>
+  (printout t "Hemorrhoids" crlf)
+)
+
+(defrule is_it_Hemorrhoids
+  (has_symptom pain_in_anal_region)
+  (has_symptom bloody_stool)
+  (has_symptom itching)
+  (has_symptom swelling_near_anus)
+  =>
+  (assert (disease_is Hemorrhoids))
+)
+  
+(defrule Conjunctivitis
+  (disease_is Conjunctivitis)
+  =>
+  (printout t "Conjunctivitis" crlf)
+)
+
+(defrule is_it_Conjunctivitis
+  (has_symptom red_eyes)
+  (has_symptom itchy_eyes)
+  (has_symptom watery_eyes)
+  (has_symptom eye_discharge)
+  =>
+  (assert (disease_is Conjunctivitis))
+)
+  
+(defrule Chickenpox_mild
+  (disease_is Chickenpox_mild)
+  =>
+  (printout t "Chickenpox_mild" crlf)
+)
+
+(defrule is_it_Chickenpox_mild
+  (has_symptom skin_rash)
+  (has_symptom low_grade_fever)
+  (has_symptom itching)
+  (has_symptom tiredness)
+  =>
+  (assert (disease_is Chickenpox_mild))
+)
+  
+(defrule Bacterial_Vaginosis
+  (disease_is Bacterial_Vaginosis)
+  =>
+  (printout t "Bacterial_Vaginosis" crlf)
+)
+
+(defrule is_it_Bacterial_Vaginosis
+  (has_symptom vaginal_discharge)
+  (has_symptom bad_odor)
+  (has_symptom itching)
+  (has_symptom irritation)
+  =>
+  (assert (disease_is Bacterial_Vaginosis))
 )
   

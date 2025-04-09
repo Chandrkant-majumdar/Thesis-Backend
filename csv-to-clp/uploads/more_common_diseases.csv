@@ -1,0 +1,12 @@
+Disease,Symptom_1,Symptom_2,Symptom_3,Symptom_4,Symptom_5,Symptom_6,Symptom_7
+Influenza,high_fever,cough,sore_throat,muscle_ache,fatigue,chills,headache
+Tonsillitis,throat_pain,swollen_tonsils,fever,difficulty_swallowing,ear_pain,bad_breath,hoarseness
+Appendicitis,abdominal_pain,nausea,vomiting,fever,loss_of_appetite,constipation,swelling_in_abdomen
+Sinusitis,facial_pain,headache,nasal_congestion,runny_nose,postnasal_drip,fever,
+Otitis Media,ear_pain,fever,fluid_draining_from_ear,trouble_hearing,loss_of_balance,irritability,
+Gout,joint_pain,swelling_joints,redness,warmth,joint_stiffness,fever,
+Tension Headache,headache,tight_band_like_pain,neck_pain,fatigue,irritability,trouble_concentrating,
+Hemorrhoids,pain_in_anal_region,bloody_stool,itching,swelling_near_anus,discomfort_while_sitting,,
+Conjunctivitis,red_eyes,itchy_eyes,watery_eyes,eye_discharge,swollen_eyelids,,
+Chickenpox_mild,skin_rash,low_grade_fever,itching,tiredness,loss_of_appetite,,
+Bacterial_Vaginosis,vaginal_discharge,bad_odor,itching,irritation,swelling,,

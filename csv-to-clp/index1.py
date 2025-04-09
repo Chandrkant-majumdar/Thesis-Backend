@@ -161,7 +161,6 @@ def index():
     print("DEBUG: Root endpoint accessed")
     return jsonify({'status': 'online', 'message': 'Server is running'}), 200
 
-
 @app.route('/api/feedback', methods=['POST'])
 def process_feedback():
     try:
@@ -183,7 +182,6 @@ def process_feedback():
 
         # Convert disease name to expected format in rules
         rule_disease_name = disease_name.replace(' ', '_')
-        rule_pattern = f"defrule is_it_{rule_disease_name}"
 
         # Path to the rules file
         clp_file_path = CLP_FILE_PATH
@@ -203,8 +201,10 @@ def process_feedback():
                 'message': f'Disease rule for {disease_name} not found'
             }), 404
 
-        # Process the symptoms to add
-        symptoms_to_add = [s.strip().replace(' ', '_') for s in missed_symptoms.split(',')]
+        # Process the symptoms to add - properly handle comma separated values
+        raw_symptoms = [s.strip() for s in missed_symptoms.split(',') if s.strip()]
+        # Format symptoms according to CLIPS rules (replace spaces with nothing, add suffix '1')
+        symptoms_to_add = [f"{symptom.replace(' ', '')}" for symptom in raw_symptoms]
 
         # Generate symptom lines to add
         symptom_lines = '\n  '.join([f"(has_symptom {symptom})" for symptom in symptoms_to_add])
@@ -233,7 +233,20 @@ def process_feedback():
             'status': 'error',
             'message': str(e)
         }), 500
-
+@app.route('/api/healthcheck', methods=['GET'])
+def healthcheck():
+    """Health check endpoint to verify server status"""
+    try:
+        return jsonify({
+            'status': 'ok',
+            'message': 'Server is running'
+        }), 200
+    except Exception as e:
+        print(f"ERROR: Health check failed: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 @app.route('/api/upload_csv', methods=['POST'])
 def upload_csv():
     print("DEBUG: Upload CSV endpoint accessed")
@@ -300,7 +313,204 @@ def upload_csv():
             'error_detail': error_trace
         }), 500
 
+import re
 
+
+@app.route('/api/knowledge_base', methods=['GET'])
+def get_knowledge_base():
+    """Fetch all diseases and their symptoms from the CLIPS file"""
+    try:
+        # Check if file exists
+        if not os.path.exists(CLP_FILE_PATH):
+            print(f"DEBUG: Knowledge base file not found at {CLP_FILE_PATH}")
+            return jsonify([]), 200
+
+        # Read the CLIPS file
+        with open(CLP_FILE_PATH, 'r') as file:
+            content = file.read()
+            print(f"DEBUG: Loaded CLIPS file, size: {len(content)} bytes")
+
+        # Parse the rules to extract diseases and their symptoms
+        knowledge_base = []
+        print("DEBUG: Extracting diseases and symptoms from CLIPS rules")
+
+        # More flexible regex pattern to handle different formatting in the file
+        disease_pattern = r'\(defrule\s+is_it_([A-Za-z0-9_-]+)\s+(.*?)\s*=>'
+        disease_matches = re.finditer(disease_pattern, content, re.DOTALL)
+
+        disease_count = 0
+        for idx, match in enumerate(disease_matches):
+            disease_count += 1
+            disease_id = idx + 1
+            disease_name = match.group(1).replace('_', ' ')
+            symptom_pattern = r'\(has_symptom\s+([A-Za-z0-9_-]+)\)'
+            symptoms = re.findall(symptom_pattern, match.group(2))
+
+            print(f"DEBUG: Found disease #{disease_id}: {disease_name} with {len(symptoms)} symptoms")
+
+            knowledge_base.append({
+                'id': disease_id,
+                'disease': disease_name,
+                'symptoms': symptoms
+            })
+
+        print(f"DEBUG: Total diseases extracted: {disease_count}")
+
+        # Check for potential missed patterns
+        all_rules = re.findall(r'\(defrule\s+is_it_([A-Za-z0-9_-]+)', content)
+        print(f"DEBUG: Total 'is_it_' rules found in file: {len(all_rules)}")
+
+        if len(all_rules) > disease_count:
+            print(
+                f"DEBUG: Warning! Not all diseases were captured. Found {len(all_rules)} rule definitions but only extracted {disease_count}")
+
+        return jsonify(knowledge_base), 200
+    except Exception as e:
+        print(f"ERROR: Failed to fetch knowledge base: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+@app.route('/api/add_symptom', methods=['POST'])
+def add_symptom():
+    """Add a symptom to a disease"""
+    try:
+        data = request.get_json()
+        disease_id = data.get('diseaseId')
+        symptom = data.get('symptom', '').replace(' ', '')
+
+        if not symptom:
+            return jsonify({'error': 'Symptom cannot be empty'}), 400
+
+        # Get current knowledge base
+        response = app.test_client().get('/api/knowledge_base')
+        knowledge_base = response.get_json()
+
+        # Find the disease by ID
+        disease = next((d for d in knowledge_base if d['id'] == disease_id), None)
+        if not disease:
+            return jsonify({'error': f'Disease with ID {disease_id} not found'}), 404
+
+        # Format disease name for the rule pattern
+        rule_disease_name = disease['disease'].replace(' ', '_')
+
+        # Read the current file content
+        with open(CLP_FILE_PATH, 'r') as file:
+            content = file.read()
+
+        # Find the complete disease rule with a more robust pattern
+        pattern = rf'\(defrule\s+is_it_{re.escape(rule_disease_name)}([\s\S]*?)=>\s*([\s\S]*?)\)'
+        rule_match = re.search(pattern, content, re.DOTALL)
+
+        if not rule_match:
+            return jsonify({'error': f'Disease rule for {disease["disease"]} not found'}), 404
+
+        # Check if symptom already exists
+        symptom_pattern = rf'\(has_symptom\s+{re.escape(symptom)}\)'
+        if re.search(symptom_pattern, rule_match.group(0)):
+            return jsonify({'status': 'info', 'message': f'Symptom {symptom} already exists for {disease["disease"]}'}), 200
+
+        # Get the whole rule and parts for reconstruction
+        whole_rule = rule_match.group(0)
+        before_arrow = rule_match.group(1)
+        after_arrow = rule_match.group(2)
+
+        # Create updated rule with new symptom
+        new_rule = f'(defrule is_it_{rule_disease_name}{before_arrow}  (has_symptom {symptom})\n=>{after_arrow})'
+
+        # Replace the old rule with the updated one
+        updated_content = content.replace(whole_rule, new_rule)
+
+        # Write back to file
+        with open(CLP_FILE_PATH, 'w') as file:
+            file.write(updated_content)
+
+        return jsonify({
+            'status': 'success',
+            'message': f'Added symptom {symptom} to {disease["disease"]}'
+        }), 200
+    except Exception as e:
+        print(f"Error adding symptom: {str(e)}")
+        print(traceback.format_exc())  # Add for better debugging
+        return jsonify({'error': str(e)}), 500
+@app.route('/api/remove_symptom', methods=['POST'])
+def remove_symptom():
+    """Remove a symptom from a disease"""
+    try:
+        data = request.get_json()
+        disease_id = data.get('diseaseId')
+        symptom = data.get('symptom')
+
+        # Get current knowledge base
+        response = app.test_client().get('/api/knowledge_base')
+        knowledge_base = response.get_json()
+
+        # Find the disease by ID
+        disease = next((d for d in knowledge_base if d['id'] == disease_id), None)
+        if not disease:
+            return jsonify({'error': f'Disease with ID {disease_id} not found'}), 404
+
+        # Format disease name for rule matching
+        rule_disease_name = disease['disease'].replace(' ', '_')
+
+        # Read the current file content
+        with open(CLP_FILE_PATH, 'r') as file:
+            content = file.read()
+
+        # Pattern to match the symptom line in the specific disease rule
+        symptom_pattern = rf'(\(defrule is_it_{rule_disease_name}\s*[^=]*)(\n\s*\(has_symptom\s+{symptom}\))(.*=>)'
+        content = re.sub(symptom_pattern, r'\1\3', content, flags=re.DOTALL)
+
+        # Write updated content back
+        with open(CLP_FILE_PATH, 'w') as file:
+            file.write(content)
+
+        return jsonify({'status': 'success', 'message': f'Removed symptom {symptom} from {disease["disease"]}'}), 200
+    except Exception as e:
+        print(f"Error removing symptom: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/add_disease', methods=['POST'])
+def add_disease():
+    """Add a new disease with symptoms"""
+    try:
+        data = request.get_json()
+        disease_name = data.get('name', '').strip()
+        symptoms = [s.strip().replace(' ', '') for s in data.get('symptoms', []) if s.strip()]
+
+        if not disease_name or not symptoms:
+            return jsonify({'error': 'Disease name and at least one symptom are required'}), 400
+
+        # Format disease name for CLIPS
+        rule_disease_name = disease_name.replace(' ', '_')
+
+        # Format symptoms for the rule
+        symptoms_text = "\n  ".join([f"(has_symptom {symptom})" for symptom in symptoms])
+
+        # Create the new disease rule
+        new_rule = f"""
+(defrule {rule_disease_name}
+  (disease_is {rule_disease_name})
+  =>
+  (printout t "{disease_name}" crlf)
+)
+
+(defrule is_it_{rule_disease_name}
+  {symptoms_text}
+  =>
+  (assert (disease_is {rule_disease_name}))
+)
+"""
+
+        # Append the new rule to the file
+        with open(CLP_FILE_PATH, 'a') as file:
+            file.write(new_rule)
+
+        return jsonify({
+            'status': 'success',
+            'message': f'Added new disease: {disease_name} with {len(symptoms)} symptoms'
+        }), 200
+    except Exception as e:
+        print(f"Error adding disease: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
     print("\n" + "="*80)
     print("DEBUG: Starting Flask server on port 5001")
